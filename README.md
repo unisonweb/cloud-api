@@ -2,7 +2,7 @@
 
 The back end for Unison Cloud
 
-This repository contains the source for cloud-api, but the source for nimbus lives [on Share](https://share.unison-lang.org/@cloud/p/code/latest/namespaces/private/nimbus/main).
+This repository contains the source for cloud-api, but the source for nimbus lives [on Share](https://share.unison-lang.org/@unison/nimbus).
 
 # How cache invalidation works (cloud-api → nimbus)
 
