@@ -1,0 +1,34 @@
+{
+  "clusterMap": {
+    "unison": [
+      "141c4ddf-2423-4f10-a4de-465939951354"
+    ]
+  },
+  "consulUri": "http://consul:8500",
+  "dynamo": {
+    "credentials": {
+      "accessKey": "myAccessKey",
+      "secretKey": "mySecretKey"
+    },
+    "host": "unison-test-dynamo",
+    "port": 8000,
+    "type": "local"
+  },
+  "nodes": [
+    {
+      "host": "nimbus-0000",
+      "httpPort": 17011,
+      "port": 17010
+    },
+    {
+      "host": "nimbus-0001",
+      "httpPort": 17011,
+      "port": 17010
+    },
+    {
+      "host": "nimbus-0002",
+      "httpPort": 17011,
+      "port": 17010
+    }
+  ]
+}

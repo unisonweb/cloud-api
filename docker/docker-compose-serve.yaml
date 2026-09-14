@@ -1,0 +1,41 @@
+networks:
+  default:
+    internal: false
+
+services:
+  cloud-api:
+    ports:
+      - "5424:5424"
+  postgres:
+    ports:
+      - "5432:5432"
+
+  consul:
+    ports:
+      - "8500:8500"
+
+  vault:
+    ports:
+      - "8200:8200"
+
+  redis:
+    ports:
+     - "6379:6379"
+
+  nimbus-0000:
+    ports:
+      - "17010:17010"
+      - "17011:17011"
+      - "17012:17012"
+    environment:
+      NIMBUS_CLOUD_API_HOST: "cloud-api"
+
+  unison-test-s3:
+    ports:
+      - "9000:9000"
+      - "9443:443"
+
+  unison-test-dynamo:
+    ports:
+      - "8000:8000"
+

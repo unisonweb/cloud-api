@@ -1,0 +1,16 @@
+.stack-work
+docker/tmp
+*.hie
+*.uc
+.unison
+.unisonHistory
+/docker/secrets
+/secrets
+/codebases
+*.hie
+integration-tests/tmp
+.DS_Store
+.direnv
+.vscode
+.envrc.private
+tmp

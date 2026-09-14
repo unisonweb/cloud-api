@@ -1,0 +1,62 @@
+networks:
+  default:
+    # Give each run its own network to avoid collisions in parallel CI runs
+    name: unison-test-${BUILD_TAG}
+
+services:
+  postgres:
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres
+
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: sekrit
+#    command: >
+#      postgres
+#      -c log_min_duration_statement=0
+#      -c log_line_prefix='%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '
+#      -c log_statement=all
+
+  consul:
+    image: ${DOCKER_REGISTRY}/consul-test:${BUILD_TAG}
+
+  vault:
+    image: hashicorp/vault:1.21
+    environment:
+      VAULT_ADDR: "http://127.0.0.1:8200"
+      VAULT_DEV_ROOT_TOKEN_ID: "vault-plaintext-root-token"
+    cap_add:
+      - IPC_LOCK
+
+  unison-test-loki:
+    # This is a really old loki version. But newer versions set USER to a
+    # non-default value which can run into issues when attempting to `mkdir
+    # /loki`. There are solutions to this, but Cody has failed to find a way to
+    # solve this that will work for BOTH rootful and rootless docker
+    # installations.
+    image: grafana/loki:2.2.0
+
+  redis:
+    image: redis:6.2.6
+
+  unison-test-s3:
+    image: ${DOCKER_REGISTRY}/nimbus-test-s3:${BUILD_TAG}
+    networks:
+      default:
+        aliases:
+          - unison-cloud-services.localhost
+          - unison-cloud-services.unison-test-s3
+          - unison-cloud-user-blobs.localhost
+          - unison-cloud-user-blobs.unison-test-s3
+    environment:
+      MINIO_ROOT_USER: "unison-test"
+      MINIO_ROOT_PASSWORD: "sekret-for-tests"
+      MINIO_DOMAIN: "unison-test-s3"
+
+  unison-test-dynamo:
+    image: amazon/dynamodb-local:2.0.0
+
+  outbound-http-proxy:
+    image: ${DOCKER_REGISTRY}/nimbus-outbound-proxy:${BUILD_TAG}
+

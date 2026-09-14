@@ -1,0 +1,1 @@
+deb [signed-by=/etc/apt/trusted.gpg.d/unison-computing.gpg] http://debian.unison-lang.org/ trixie nightly

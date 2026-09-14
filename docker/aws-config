@@ -1,0 +1,12 @@
+
+
+
+[default]
+services = my-services
+ca_bundle = minio.test.pem
+endpoint_url = http://unison-test-s3:9756
+
+[services my-services]
+s3 = 
+    endpoint_url =  http://unison-test-s3:9756
+    ca_bundle = minio.test.pem

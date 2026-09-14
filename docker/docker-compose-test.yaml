@@ -1,0 +1,24 @@
+services:
+  integration-tests:
+    depends_on:
+      cloud-api:
+        condition: service_healthy
+      nimbus-0000:
+        condition: service_healthy
+      outbound-http-proxy:
+        condition: service_healthy
+    image: "324181518966.dkr.ecr.us-west-2.amazonaws.com/nimbus-integration-tests:${BUILD_TAG}"
+    environment:
+      NIMBUS_CLIENT_CONFIG_FILE: "${NIMBUS_CLIENT_CONFIG_FILE}"
+      NIMBUS_BYOC_CLIENT_CONFIG_FILE: "${NIMBUS_BYOC_CLIENT_CONFIG_FILE}"
+      UNISON_CLOUD_SUBMIT_DISABLE_LOG_STREAMING: "${UNISON_CLOUD_SUBMIT_DISABLE_LOG_STREAMING}"
+      UNISON_CLOUD_LOCAL_TESTS: "true"
+      VAULT_ADDR: "http://vault:8200"
+      VAULT_TOKEN: "vault-plaintext-root-token"
+      UNISON_CLOUD_HOST: "cloud-api"
+      UNISON_CLOUD_USE_TLS: "false"
+      UNISON_CLOUD_HTTP_PORT: "5424"
+      UNISON_CLOUD_TCP_PORT: "5425"
+      AWS_REGION: ""
+      AWS_ACCESS_KEY_ID: "myAccessKey"
+      AWS_SECRET_ACCESS_KEY: "mySecretKey"

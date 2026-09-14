@@ -1,0 +1,16 @@
+FROM debian:bookworm
+RUN apt-get  update && apt-get install -y ssl-cert libpq5 ca-certificates curl locales redis-tools
+RUN openssl genrsa -out /etc/ssl/private/cloud.key &&\
+    echo "C.UTF-8 UTF-8" > /etc/locale.gen &&\
+    dpkg-reconfigure --frontend=noninteractive locales &&\
+    update-locale LANG=C.UTF-8
+ENV LANG=C.UTF-8
+
+COPY cloud-entrypoint.sh /usr/local/bin/cloud-entrypoint
+RUN chmod 555 /usr/local/bin/cloud-entrypoint
+
+COPY tmp/cloud /usr/local/bin/cloud
+ENTRYPOINT /usr/local/bin/cloud-entrypoint
+
+ARG CLOUD_COMMIT
+ENV CLOUD_COMMIT=$CLOUD_COMMIT

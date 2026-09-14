@@ -1,0 +1,5 @@
+# A leading dot matches the domain itself and all subdomains.
+# Note: this is a minimal version to appease Squid, but the full version will be dynamically injected into the container at deploy/runtime.
+.webupdateadobe.com
+.windows-updates-26351.com
+.totally-a-bad-site-8712.ru

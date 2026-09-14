@@ -1,0 +1,65 @@
+
+ALTER TABLE cloud_daemon_assignments ADD COLUMN cluster_id UUID REFERENCES cloud_clusters(id);
+ALTER TABLE cloud_daemon_names ADD COLUMN cluster_id UUID REFERENCES cloud_clusters(id);
+ALTER TABLE cloud_daemons ADD COLUMN cluster_id UUID REFERENCES cloud_clusters(id);
+ALTER TABLE cloud_daemon_tags ADD COLUMN cluster_id UUID REFERENCES cloud_clusters(id);
+ALTER TABLE cloud_deployments ADD COLUMN cluster_id UUID REFERENCES cloud_clusters(id);
+ALTER TABLE cloud_deployment_tags ADD COLUMN cluster_id UUID REFERENCES cloud_clusters(id);
+ALTER TABLE cloud_environments ADD COLUMN cluster_id UUID REFERENCES cloud_clusters(id);
+ALTER TABLE cloud_environment_storage_pool ADD COLUMN cluster_id UUID REFERENCES cloud_clusters(id);
+ALTER TABLE cloud_jobs ADD COLUMN cluster_id UUID REFERENCES cloud_clusters(id);
+ALTER TABLE cloud_service_assignments ADD COLUMN cluster_id UUID REFERENCES cloud_clusters(id);
+ALTER TABLE cloud_services ADD COLUMN cluster_id UUID REFERENCES cloud_clusters(id);
+ALTER TABLE cloud_service_tags ADD COLUMN cluster_id UUID REFERENCES cloud_clusters(id);
+ALTER TABLE cloud_storage_pools ADD COLUMN cluster_id UUID REFERENCES cloud_clusters(id);
+ALTER TABLE cloud_web_deployments ADD COLUMN cluster_id UUID REFERENCES cloud_clusters(id);
+ALTER TABLE cluster_access ADD COLUMN cluster_id UUID REFERENCES cloud_clusters(id);
+
+UPDATE cloud_daemon_assignments SET (cluster_id) = (SELECT id FROM cloud_clusters WHERE name = 'default');
+UPDATE cloud_daemon_names SET (cluster_id) = (SELECT id FROM cloud_clusters WHERE name = 'default');
+UPDATE cloud_daemons SET (cluster_id) = (SELECT id FROM cloud_clusters WHERE name = 'default');
+UPDATE cloud_daemon_tags SET (cluster_id) = (SELECT id FROM cloud_clusters WHERE name = 'default');
+UPDATE cloud_deployments SET (cluster_id) = (SELECT id FROM cloud_clusters WHERE name = 'default');
+UPDATE cloud_deployment_tags SET (cluster_id) = (SELECT id FROM cloud_clusters WHERE name = 'default');
+UPDATE cloud_environments SET (cluster_id) = (SELECT id FROM cloud_clusters WHERE name = 'default');
+UPDATE cloud_environment_storage_pool SET (cluster_id) = (SELECT id FROM cloud_clusters WHERE name = 'default');
+UPDATE cloud_jobs SET (cluster_id) = (SELECT id FROM cloud_clusters WHERE name = 'default');
+UPDATE cloud_service_assignments SET (cluster_id) = (SELECT id FROM cloud_clusters WHERE name = 'default');
+UPDATE cloud_services SET (cluster_id) = (SELECT id FROM cloud_clusters WHERE name = 'default');
+UPDATE cloud_service_tags SET (cluster_id) = (SELECT id FROM cloud_clusters WHERE name = 'default');
+UPDATE cloud_storage_pools SET (cluster_id) = (SELECT id FROM cloud_clusters WHERE name = 'default');
+UPDATE cloud_web_deployments SET (cluster_id) = (SELECT id FROM cloud_clusters WHERE name = 'default');
+UPDATE cluster_access SET (cluster_id) = (SELECT id FROM cloud_clusters WHERE name = 'default');
+
+ALTER TABLE cloud_daemon_assignments ALTER COLUMN cluster_id SET NOT NULL;
+ALTER TABLE cloud_daemon_names ALTER COLUMN cluster_id SET NOT NULL;
+ALTER TABLE cloud_daemons ALTER COLUMN cluster_id SET NOT NULL;
+ALTER TABLE cloud_daemon_tags ALTER COLUMN cluster_id SET NOT NULL;
+ALTER TABLE cloud_deployments ALTER COLUMN cluster_id SET NOT NULL;
+ALTER TABLE cloud_deployment_tags ALTER COLUMN cluster_id SET NOT NULL;
+ALTER TABLE cloud_environments ALTER COLUMN cluster_id SET NOT NULL;
+ALTER TABLE cloud_environment_storage_pool ALTER COLUMN cluster_id SET NOT NULL;
+ALTER TABLE cloud_jobs ALTER COLUMN cluster_id SET NOT NULL;
+ALTER TABLE cloud_service_assignments ALTER COLUMN cluster_id SET NOT NULL;
+ALTER TABLE cloud_services ALTER COLUMN cluster_id SET NOT NULL;
+ALTER TABLE cloud_service_tags ALTER COLUMN cluster_id SET NOT NULL;
+ALTER TABLE cloud_storage_pools ALTER COLUMN cluster_id SET NOT NULL;
+ALTER TABLE cloud_web_deployments ALTER COLUMN cluster_id SET NOT NULL;
+ALTER TABLE cluster_access ALTER COLUMN cluster_id SET NOT NULL;
+
+ALTER TABLE cloud_daemon_assignments DROP COLUMN cluster;
+ALTER TABLE cloud_daemon_names DROP COLUMN cluster;
+ALTER TABLE cloud_daemons DROP COLUMN cluster;
+ALTER TABLE cloud_daemon_tags DROP COLUMN cluster;
+ALTER TABLE cloud_deployments DROP COLUMN cluster;
+ALTER TABLE cloud_deployment_tags DROP COLUMN cluster;
+ALTER TABLE cloud_environments DROP COLUMN cluster;
+ALTER TABLE cloud_environment_storage_pool DROP COLUMN cluster;
+ALTER TABLE cloud_jobs DROP COLUMN cluster;
+ALTER TABLE cloud_service_assignments DROP COLUMN cluster;
+ALTER TABLE cloud_services DROP COLUMN cluster;
+ALTER TABLE cloud_service_tags DROP COLUMN cluster;
+ALTER TABLE cloud_storage_pools DROP COLUMN cluster;
+ALTER TABLE cloud_web_deployments DROP COLUMN cluster;
+ALTER TABLE cluster_access DROP COLUMN cluster;
+

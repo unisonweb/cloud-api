@@ -1,0 +1,202 @@
+name:                cloud
+version:             0.1.0.0
+github:              "githubuser/cloud"
+author:              "Unison Computing"
+maintainer:          "unison.cloud"
+license:             "MIT"
+license-file:        "LICENSE"
+copyright:           "2026 Unison Computing"
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         api to the clouds
+
+ghc-options:
+- -Wall
+- -Werror
+- -Wno-name-shadowing
+- -Wno-type-defaults
+- -Wno-missing-pattern-synonym-signatures
+- -fprint-expanded-synonyms
+- -fwrite-ide-info
+- -O2
+- -funbox-strict-fields
+
+dependencies:
+- MonadRandom
+- aeson
+- amazonka
+- amazonka-core
+- amazonka-s3
+- async
+- base >= 4.7 && < 5
+- base64-bytestring
+- base64-bytestring-type
+- binary
+- binary-instances
+- bytestring
+- case-insensitive
+- clock
+- conduit
+- crypton-connection
+- containers
+- cookie
+- crypton
+- data-default
+- deferred-folds
+- either
+- focus
+- share-auth
+- share-utils
+- fast-logger
+- filepath
+- fuzzyfind
+- hedis
+- here
+- http-api-data
+- http-client
+- http-client-tls
+- http-media
+- http-types
+- jose
+- lens
+- lens-aeson
+- megaparsec
+- memory
+- monad-validate
+- mtl
+- network
+- network-simple
+- network-uri
+- nonempty-containers
+- pem
+- hashable
+- hasql
+- hasql-pool
+- hasql-interpolate
+- prometheus-client
+- prometheus-metrics-ghc
+- random
+- regex-tdfa
+- raven-haskell
+- resource-pool == 0.3.1.0
+- resourcet
+- servant
+- servant-auth
+- servant-auth-server
+- servant-client
+- servant-server
+- servant-websockets
+- stm
+- stm-chans
+- stm-conduit
+- stm-containers
+- stripe-concepts
+- stripe-signature
+- text
+- time
+- tls
+- transformers
+- unliftio
+- unordered-containers
+- uuid
+- vault
+- vector
+- wai
+- wai-cors
+- wai-extra
+- wai-middleware-prometheus
+- warp
+- websockets
+- witch
+- witherable
+- x509
+- x509-store
+
+default-extensions:
+  - ApplicativeDo
+  - BangPatterns
+  - BlockArguments
+  - BlockArguments
+  - DeriveFoldable
+  - DeriveFunctor
+  - DeriveGeneric
+  - DeriveTraversable
+  - DerivingStrategies
+  - DerivingVia
+  - DoAndIfThenElse
+  - DuplicateRecordFields
+  - FlexibleContexts
+  - FlexibleInstances
+  - GeneralizedNewtypeDeriving
+  - ImportQualifiedPost
+  - InstanceSigs
+  - LambdaCase
+  - MultiParamTypeClasses
+  - NamedFieldPuns
+  - NumericUnderscores
+  - OverloadedStrings
+  - OverloadedRecordDot
+  - PatternSynonyms
+  - QuasiQuotes
+  - QuasiQuotes
+  - RankNTypes
+  - RecordWildCards
+  - ScopedTypeVariables
+  - TupleSections
+  - TypeApplications
+  - TypeOperators
+  - ViewPatterns
+
+library:
+  source-dirs: src
+  when:
+    - condition: false
+      other-modules: Paths_cloud
+
+executables:
+  cloud-exe:
+    when:
+      - condition: false
+        other-modules: Paths_cloud
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - '"-with-rtsopts=-N -A32m -qn2"'
+    dependencies:
+    - cloud
+
+  # integration-tests:
+  #   when:
+  #     - condition: false
+  #       other-modules: Paths_cloud
+  #   main:                Main.hs
+  #   source-dirs:         integration-tests
+  #   dependencies:
+  #   - cloud
+  #   - hspec
+
+
+tests:
+  cloud-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - '"-with-rtsopts=-N -A32m -qn2"'
+    dependencies:
+    - cloud
+    - hspec
+    - hspec-discover
+    - hspec-expectations
+    - hspec-wai
+    - hspec-wai-json
+    - aeson

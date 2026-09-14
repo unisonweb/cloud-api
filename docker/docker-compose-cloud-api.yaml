@@ -1,0 +1,63 @@
+services:
+  cloud-api:
+    image: ${DOCKER_REGISTRY}/cloud:${BUILD_TAG}
+    depends_on:
+      consul:
+        condition: service_healthy
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_started
+      vault:
+        condition: service_started
+      unison-test-s3:
+        condition: service_started
+    stop_signal: SIGINT
+    stop_grace_period: 1m
+    environment:
+      CLOUD_DEPLOYMENT: "local"
+      CLOUD_IP: "127.0.0.1"
+      SHARE_API_ORIGIN: "https://api.unison-lang.org"
+      CLOUD_API_ORIGIN: "http://localhost:5424"
+      NOMAD_ALLOC_HOST_cloud_http: "0.0.0.0"
+      NOMAD_HOST_IP_cloud_tcp: "cloud-api"
+      NOMAD_ALLOC_PORT_cloud_http: "5424"
+      NOMAD_ALLOC_PORT_cloud_tcp: "5425"
+      CLOUD_CLIENT_HOSTNAME: "127.0.0.1"
+      CLOUD_CLIENT_PORT: "5424"
+      CONSUL_HOST: "http://consul:8500"
+      CLOUD_REDIS: "redis://redis:6379"
+      CLOUD_POSTGRES: "postgresql://postgres:sekrit@postgres:5432"
+      CLOUD_POSTGRES_CONN_TTL: "30"
+      CLOUD_HMAC_KEY: "gpeakbroleymbscyqzrcalpemrjayhur"
+      CLOUD_EDDSA_KEY: "cloud-eddsa-key-cloud-eddsa-key-"
+      SHARE_EDDSA_KEY: "share-eddsa-key-share-eddsa-key-"
+      CLOUD_SHARE_UI_ORIGIN: "http://localhost:1234"
+      CLOUD_CLOUD_UI_ORIGIN: "http://localhost:5678"
+      CLOUD_CLOUD_HOMEPAGE_ORIGIN: "http://localhost:5679"
+      CLOUD_LOG_LEVEL: "DEBUG"
+      CLOUD_COMMIT: "dev"
+      CLOUD_ZENDESK_API_USER: "invaliduser@example.com"
+      CLOUD_ZENDESK_API_TOKEN: "bad-password"
+      CLOUD_SHARE_OAUTH_CLIENT_ID: "invalid"
+      CLOUD_SHARE_OAUTH_CLIENT_SECRET: "invalid"
+      CLOUD_CLOUD_SERVICE_BUCKET: "unison-cloud-services"
+      CLOUD_ENVIRONMENTS_MOUNT: "environments"
+      VAULT_HOST: "http://vault:8200/v1"
+      VAULT_TOKEN: "vault-plaintext-root-token"
+      AWS_CONFIG_FILE: "/root/.aws/config"
+      AWS_ENDPOINT_URL: "https://unison-test-s3:9000"
+      AWS_ACCESS_KEY_ID: "unison-test"
+      AWS_SECRET_ACCESS_KEY: "sekret-for-tests"
+      CLOUD_POSTGRES_CONN_MAX: "10"
+      CLOUD_STRIPE_API_SECRET_KEY: "rk_test_abcd1234abcd1234abcd1234"
+      CLOUD_STRIPE_WEBHOOK_SECRET_KEY: "whsec_abcd1234abcd1234abcd1234"
+      CLOUD_API_SUFFIX: "byoc.unison.cloud"
+  nimbus-0000:
+    depends_on:
+      cloud-api:
+        condition: service_healthy
+  byoc-0000:
+    depends_on:
+      cloud-api:
+        condition: service_healthy

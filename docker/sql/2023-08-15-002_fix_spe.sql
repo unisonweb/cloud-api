@@ -1,0 +1,2 @@
+ALTER TABLE cloud_environnment_storage_pool RENAME TO cloud_environment_storage_pool;
+

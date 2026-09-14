@@ -1,0 +1,1202 @@
+#!/usr/bin/env bash
+
+set -u
+
+#                                                                 ▄▄▄▄     
+#                                                                 ▀▀██     
+#                                    ▄█████▄  ██    ██   ██▄████    ██     
+#                                   ██▀    ▀  ██    ██   ██▀        ██     
+#                                   ██        ██    ██   ██         ██     
+#                                   ▀██▄▄▄▄█  ██▄▄▄███   ██         ██▄▄▄  
+#                                     ▀▀▀▀▀    ▀▀▀▀ ▀▀   ▀▀          ▀▀▀▀  
+
+
+COOKIE_JAR=$(mktemp)
+
+prod_url() {
+    echo "https://api.unison.cloud$1"
+}
+
+staging_url() {
+    echo "http://staging.api.unison.cloud$1"
+}
+
+local_url() {
+    echo "http://127.0.0.1:5424$1"
+}
+
+prod_login_url() {
+    prod_url "/login"
+}
+
+staging_login_url() {
+    staging_url "/login"
+}
+
+local_login_url() {
+    local_url "/local/user/test/login"
+}
+
+url() {
+    if [ "$LOCAL" -eq 0 ]; then
+	if [ "$STAGING" -eq 0 ]; then
+        	stagin_url "$1"
+	else
+		prod_url "$1"
+	fi
+    else
+        local_url "$1"
+    fi
+}
+
+login_url() {
+    if [ "$LOCAL" -eq 0 ]; then
+        if [ "$STAGING" ]; then
+	    staging_login_url
+	else
+            prod_login_url
+	fi
+    else
+        local_login_url
+    fi
+}
+
+SEND_BINARY=(-H "Content-Type: application/octet-stream")
+SEND_PLAINTEXT=(-H "Content-Type: text/plain;charset=utf-8")
+SEND_JSON=(-H "Content-Type: application/json;charset=utf-8")
+ACCEPT_JSON=(-H "Accept: application/json;charset=utf-8")
+
+local_curl_command() {
+    Q=-q
+    case $VERBOSITY in
+        0)
+            Q=-q
+            ;;
+        1)
+            Q=
+            ;;
+        *)
+            Q=-v
+            ;;
+    esac
+
+    if [ "$VERBOSITY" -gt 0 ]; then
+        gray "curl --fail-with-body -s $Q -b ${COOKIE_JAR} $*" 1>&2
+        sleep 1
+    fi
+    curl  -b "${COOKIE_JAR}" "$@"
+
+}
+
+prod_curl_command() {
+    Q=-q
+    case $VERBOSITY in
+        0)
+            Q=-q
+            ;;
+        1)
+            Q=
+            ;;
+        *)
+            Q=-v
+            ;;
+    esac
+
+    if [ "$VERBOSITY" -gt 0 ]; then
+        gray "curl --fail-with-body -s $Q --cookie JWT-Cookie=\$(jq -r '.credentials.default.\"api.unison-lang.org\".tokens.access_token' < ~/.local/share/unisonlanguage/credentials.json) $*" 1>&2
+        sleep 1
+    fi
+    curl --fail-with-body -s "$Q" --cookie "JWT-Cookie=$(jq -r '.credentials.default."api.unison-lang.org".tokens.access_token' < ~/.local/share/unisonlanguage/credentials.json)" "$@"
+
+}
+
+curl_command() {
+    if [ "$LOCAL" -eq 0 ]; then
+        prod_curl_command "$@"
+    else
+        local_curl_command "$@"
+    fi
+}
+
+curl_local_login() {
+    case $VERBOSITY in
+        0)
+            Q=-q
+            ;;
+        1)
+            Q=-q
+            ;;
+        *)
+            Q=-v
+            ;;
+    esac
+
+    if [ "$VERBOSITY" -gt 0 ]; then
+        gray "curl --fail-with-body -s $Q --cookie-jar ${COOKIE_JAR} $(login_url)\n" 1>&2
+    fi
+    curl --fail-with-body -s "$Q" --cookie-jar "${COOKIE_JAR}" "$(login_url)"
+    res=$?
+     
+    if [ "$VERBOSITY" -gt 0 ]; then
+        case $res in
+            0)
+                green "\nsuccessfully logged in\n"
+                ;;
+            *)
+                red "foo"
+                die "\nfailed to log in\n"
+                ;;
+        esac
+    fi
+}
+
+curl_login() {
+    if [ "$LOCAL" -eq 0 ]; then
+        :
+    else
+        curl_local_login
+    fi
+}
+
+#                                                     ██     ▄▄▄▄     
+#                                          ██         ▀▀     ▀▀██     
+#                              ██    ██  ███████    ████       ██     
+#                              ██    ██    ██         ██       ██     
+#                              ██    ██    ██         ██       ██     
+#                              ██▄▄▄███    ██▄▄▄   ▄▄▄██▄▄▄    ██▄▄▄  
+#                               ▀▀▀▀ ▀▀     ▀▀▀▀   ▀▀▀▀▀▀▀▀     ▀▀▀▀  
+
+
+generate_hash() {
+    echo -n "$1" | openssl dgst -sha256 -binary | base64 | tr '/' '_' | tr '+' '-' | tr -d '='
+}
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+LIGHT_GRAY='\033[0;90m'
+PLAIN='\033[0m'
+
+red() {
+    # shellcheck disable=SC2059
+    printf "${RED}$*${PLAIN}\n"
+}
+
+green() {
+    # shellcheck disable=SC2059
+    printf "${GREEN}$*${PLAIN}\n"
+}
+
+gray() {
+    # shellcheck disable=SC2059
+    printf "${LIGHT_GRAY}$1${PLAIN}\n"
+}
+
+################################################################################
+# account
+
+account_get() {
+    curl_command "${ACCEPT_JSON[@]}" "$(url "/v2/account")" | jq .
+}
+
+account_subscribe() {
+    cloudTier=$1; shift
+    customerInfo='{ "name" : "Test McUser", "address" : {"line1": "1234 Random Rd", "city": "Gotham", "country": "US", "postal_code": "60652", "state": "Illinois"}}';
+    curl_command "${SEND_JSON[@]}" "${ACCEPT_JSON[@]}" -X POST -d "{\"cloudTier\": \"$cloudTier\", \"customer\": $customerInfo}" "$(url "/v2/account/subscription")" | jq
+}
+
+account_command() {
+    if [ $# -lt 1 ]; then
+        account_help
+    else
+        command=$1 ; shift
+        case $command in
+            get)
+                account_get
+                ;;
+            subscribe)
+                account_subscribe "$@"
+                ;;
+            help)
+                account_help
+                ;;
+            *)
+                echo "Unknown command: $command"
+                ;;
+        esac
+    fi
+}
+
+account_help() {
+    echo "Usage:"
+    echo "account [command]"
+    echo "Commands:"
+    echo "  get"
+    echo "  subscribe <cloudTier>"
+    echo "    cloudTier: Starter, Pro"
+}
+
+                              
+#                                     ▄████▄   ██▄████▄  ██▄  ▄██ 
+#                                    ██▄▄▄▄██  ██▀   ██   ██  ██  
+#                                    ██▀▀▀▀▀▀  ██    ██   ▀█▄▄█▀  
+#                                    ▀██▄▄▄▄█  ██    ██    ████   
+#                                      ▀▀▀▀▀   ▀▀    ▀▀     ▀▀    
+
+
+environment_create() {
+    curl_command -X POST "$(url "/v2/environments/$1")"
+}
+
+environment_set_value() {
+    curl_command "${SEND_PLAINTEXT[@]}" -X POST -d "$3" "$(url "/v2/environments/$1/$2")"
+    green "successfully set environment value $2 to $3\n"
+}
+
+environment_delete_value() {
+    curl_command "${SEND_PLAINTEXT[@]}" -X DELETE "$(url "/v2/environments/$1/$2")"
+    green "successfully deleted environment value for $2\n"
+}
+
+environments_list() {
+    curl_command "${ACCEPT_JSON[@]}" "$(url "/v2/environments")" | jq -r '.[] | .id + " " + .name'
+}
+
+environment_delete() {
+    curl_command -X DELETE "$(url "/v2/environments/$1")"
+}
+
+environment_command() {
+    if [ $# -lt 1 ]; then
+        environment_help
+    else
+      command=$1 ; shift
+      case $command in
+          create)
+              environment_create "$@"
+              ;;
+          list | ls)
+              environments_list
+              ;;
+          delete | del | rm)
+              environment_delete "$@"
+              ;;
+          set)
+              environment_set_value "$@"
+              ;;
+          delete_value)
+              environment_delete_value "$@"
+              ;;
+          help)
+              environment_help
+              ;;
+          *)
+              echo "Unknown command: $command"
+              ;;
+      esac
+    fi
+}
+
+environment_help() {
+    echo "Usage:"
+    echo "environment [command]"
+    echo "Commands:"
+    echo "  create <name>"
+    echo "  list"
+    echo "  delete <uuid>"
+    echo "Notes:"
+    echo "  Acceptable spellings: environments, environment, env, e"
+}
+
+# TODO ceedubs update
+daemon_create() {
+    curl_command -X POST "$(url "/v2/daemons/$1")"
+}
+
+daemon_delete() {
+    curl_command -X DELETE "$(url "/v2/daemons/$1")"
+}
+
+daemon_list() {
+    curl_command "${ACCEPT_JSON[@]}" "$(url "/v2/daemons")" | jq -r '.[] | .id + " " + .name'
+}
+
+daemon_command() {
+    if [ $# -lt 1 ]; then
+        daemon_help
+    else
+        command=$1 ; shift
+        case $command in
+            create)
+                daemon_create "$@"
+                ;;
+            list | ls)
+                daemon_list
+                ;;
+            delete | del | rm)
+                daemon_delete "$@"
+                ;;
+            help)
+                daemon_help
+                ;;
+            *)
+                echo "Unknown command: $command"
+                ;;
+        esac
+    fi
+}
+
+daemon_help() {
+    echo "Usage:"
+    echo "daemon [command]"
+    echo "Commands:"
+    echo "  create <name>"
+    echo "  list"
+    echo "  delete <uuid>"
+}
+
+
+#                                                            ██                        
+#                                                            ▀▀                        
+#                 ▄▄█████▄   ▄████▄    ██▄████  ██▄  ▄██   ████      ▄█████▄   ▄████▄  
+#                 ██▄▄▄▄ ▀  ██▄▄▄▄██   ██▀       ██  ██      ██     ██▀    ▀  ██▄▄▄▄██ 
+#                  ▀▀▀▀██▄  ██▀▀▀▀▀▀   ██        ▀█▄▄█▀      ██     ██        ██▀▀▀▀▀▀ 
+#                 █▄▄▄▄▄██  ▀██▄▄▄▄█   ██         ████    ▄▄▄██▄▄▄  ▀██▄▄▄▄█  ▀██▄▄▄▄█ 
+#                  ▀▀▀▀▀▀     ▀▀▀▀▀    ▀▀          ▀▀     ▀▀▀▀▀▀▀▀    ▀▀▀▀▀     ▀▀▀▀▀  
+
+service_create() {
+    if curl_command "${SEND_BINARY[@]}" -X POST -d "$1" "$(url "/v2/services/create?name=$2")"
+    then
+        green "Ok.\n"
+    else
+        red "Failed.\n"
+    fi
+}
+
+services_list() {
+    if [ "$RAW" -eq 1 ]; then
+        curl_command "${ACCEPT_JSON[@]}" "$(url "/v2/services")" | jq .
+    elif [ -x "$(which mlr)" ]; then
+        curl_command "${ACCEPT_JSON[@]}" "$(url "/v2/services")" \
+           | jq -r -s '.[] | map (.tags = (.tags | join (","))) | map ({ Id: .id, Name: .name, Owner: .owner.handle, Tags: .tags} ) | (.[0] |  to_entries | map(.key)), (.[] | [.[]]) | @csv' \
+           | mlr -C --key-color=blue --csv --opprint sort -f shape
+    else
+        curl_command "${ACCEPT_JSON[@]}" "$(url "/v2/services")" \
+           | jq -r -s '.[] | map (.tags = (.tags | join (","))) | map ({ Id: .id, Name: .name, Owner: .owner.handle, Tags: .tags} ) | (.[0] |  to_entries | map(.key)), (.[] | [.[]]) | @tsv'
+    fi
+
+}
+
+services_get() {
+    if [ "$RAW" -eq 1 ]; then
+        curl_command "${ACCEPT_JSON[@]}" "$(url "/v2/services/$1")" | jq .
+    elif [ -x "$(which mlr)" ]; then
+        curl_command "${ACCEPT_JSON[@]}" "$(url "/v2/services/$1")" \
+           | jq -r  '.tags=(.tags |  join (",")) | [{ Id: .id, Name: .name, Owner: .owner.handle, Tags: .tags}] | (.[0] |  to_entries | map(.key)), (.[] | [.[]]) | @csv' \
+           | mlr -C --key-color=blue --csv --opprint sort -f shape
+    else
+        curl_command "${ACCEPT_JSON[@]}" "$(url "/v2/services/$1")" \
+           | jq -r '.tags = (.tags | join (",")) | [{ Id: .id, Name: .name, Owner: .owner.handle, Tags: .tags}] | (.[0] to_entries | map(.key)), (.[] | [.[]]) | @tsv'
+    fi
+}
+
+services_history() {
+    if [ "$RAW" -eq 1 ]; then
+        curl_command "${ACCEPT_JSON[@]}" "$(url "/v2/services/$1/history")" | jq .
+    elif [ -x "$(which mlr)" ]; then
+        curl_command "${ACCEPT_JSON[@]}" "$(url "/v2/services/$1/history")" \
+           | jq -r  'map ({"Deployed By": .deployedBy.handle, "Deployment Hash": .hash, "Deployed At": .deployedAt, "Undeployed At": .undeployedAt, "Exposed At": .exposedAt }) | (.[0] |  to_entries | map(.key)), (.[] | [.[]]) | @csv' \
+           | mlr -C --key-color=blue --csv --opprint sort -f shape
+    else
+        curl_command "${ACCEPT_JSON[@]}" "$(url "/v2/services/$1/history")" \
+           | jq -r  'map ({"Deployed By": .deployedBy.handle, "Deployment Hash": .hash, "Deployed At": .deployedAt, "Undeployed At": .undeployedAt, "Exposed At": .exposedAt }) | @tsv'
+    fi
+}
+
+services_untagged() {
+    if [ "$RAW" -eq 1 ]; then
+        JQ=(.)
+    else
+        JQ=(-r .[])
+    fi
+    curl_command "${ACCEPT_JSON[@]}" "$(url "/v2/services/untagged")" | jq "${JQ[@]}"
+}
+
+services_add_tag() {
+    if curl_command -X POST "$(url "/v2/services/$1/tags/$2")"; then
+      green "Ok.\n"
+    else 
+      red "Failed.\n"
+    fi
+}
+
+services_delete_tag() {
+    if curl_command -X DELETE "$(url "/v2/services/$1/tags/$2")" ; then
+         green "Ok.\n" 
+    else
+        red "Failed.\n"
+    fi
+}
+
+services_list_all_tags() {
+    curl_command "${ACCEPT_JSON[@]}" "$(url "/v2/services/tags")" | jq -r 'join(", ")'
+}
+
+services_by_tag() {
+    if [ "$RAW" -eq 1 ]; then
+        JQ=(.)
+    else
+        JQ=(-r .[])
+    fi
+    curl_command "${ACCEPT_JSON[@]}" "$(url "/v2/services/tags/$1")" | jq "${JQ[@]}"
+}
+service_assign() {
+    curl_command -X POST "$(url "/v2/services/$1/assign/$2")"  && green "Ok.\n"
+}
+
+service_unassign() {
+    curl_command -X POST "$(url "/v2/services/$1/unassign")" && green "Ok.\n"
+}
+
+serviceId_help() {
+    echo "Usage: service [command]"
+    echo
+    echo "Commands:"
+    echo "  list | get | ls"
+    echo "  history    <serviceId>"
+    echo "  assign     <serviceId> <hash>"
+    echo "  unassign   <serviceId>"
+    echo "  untagged"
+    echo "  tags"
+    echo "  tag        <serviceId> <tag>"
+    echo "  delete-tag <serviceId> <tag>"
+    echo "  by-tag     <tag>"
+    echo
+}
+
+serviceId_command() {
+    if [ $# -lt 1 ]; then
+        serviceId_help
+    else
+        command=$1 ; shift
+        case $command in
+            create | new)
+                service_create "$@"
+                ;;
+            list | ls)
+                services_list
+                ;;
+            get)
+                services_get "$@"
+                ;;
+            by-name | named | name | n)
+                services_by_name "$@"
+                ;;
+            history | hist | h)
+                services_history "$@"
+                ;; 
+            assign)
+                service_assign "$@"
+                ;;
+            unassign)
+                service_unassign "$@"
+                ;;
+            untagged)
+                services_untagged 
+                ;;
+            tags)
+                services_list_all_tags 
+                ;;
+            tag)
+                services_add_tag "$@"
+                ;;
+            delete-tag | tag-delete | untag)
+                services_delete_tag "$@"
+                ;;
+            by-tag)
+                services_by_tag "$@" 
+                ;;
+            help)
+                serviceId_help
+                ;;*)
+                echo "Unknown command: $command"
+                ;;
+        esac
+    fi
+}
+
+# serviceName_list() {
+#     if [ "$RAW" -eq 1 ]; then
+#         curl_command "${ACCEPT_JSON[@]}" "$(url "/v2/users/test/services")" | jq .
+#     elif [ -x "$(which mlr)" ]; then
+#         curl_command "${ACCEPT_JSON[@]}" "$(url "/v2/users/test/services")" \
+#            | jq -r -s '.[] | map (.tags = (.tags | join (","))) | map ({ Id: .id, Name: .name, Owner: .owner.handle, Tags: .tags} ) | (.[0] |  to_entries | map(.key)), (.[] | [.[]]) | @csv' \
+#            | mlr -C --key-color=blue --csv --opprint sort -f shape
+#     else
+#         curl_command "${ACCEPT_JSON[@]}" "$(url "/v2/users/test/services")" \
+#            | jq -r -s '.[] | map (.tags = (.tags | join (","))) | map ({ Id: .id, Name: .name, Owner: .owner.handle, Tags: .tags} ) | (.[0] |  to_entries | map(.key)), (.[] | [.[]]) | @tsv'
+#     fi
+# }
+
+serviceName_get() {
+    if [ "$RAW" -eq 1 ]; then
+        curl_command "${ACCEPT_JSON[@]}" "$(url "/v2/users/test/services/$1")" | jq .
+    elif [ -x "$(which mlr)" ]; then
+        curl_command "${ACCEPT_JSON[@]}" "$(url "/v2/users/test/services/$1")" \
+           | jq -r  '.tags=(.tags |  join (",")) | [{ Id: .id, Name: .name, Owner: .owner.handle, Tags: .tags}] | (.[0] |  to_entries | map(.key)), (.[] | [.[]]) | @csv' \
+           | mlr -C --key-color=blue --csv --opprint sort -f shape
+    else
+        curl_command "${ACCEPT_JSON[@]}" "$(url "/v2/users/test/services/$1")" \
+           | jq -r '.tags = (.tags | join (",")) | [{ Id: .id, Name: .name, Owner: .owner.handle, Tags: .tags}] | (.[0] to_entries | map(.key)), (.[] | [.[]]) | @tsv'
+    fi
+}
+
+serviceName_history() {
+    if [ "$RAW" -eq 1 ]; then
+        curl_command "${ACCEPT_JSON[@]}" "$(url "/v2/users/test/services/$1/deployments")" | jq .
+    elif [ -x "$(which mlr)" ]; then
+        curl_command "${ACCEPT_JSON[@]}" "$(url "/v2/users/test/services/$1/deployments")" \
+           | jq -r  'map ({"Deployed By": .deployedBy.handle, "Deployment Hash": .hash, "Deployed At": .deployedAt, "Undeployed At": .undeployedAt, "Exposed At": .exposedAt }) | (.[0] |  to_entries | map(.key)), (.[] | [.[]]) | @csv' \
+           | mlr -C --key-color=blue --csv --opprint sort -f shape
+    else
+        curl_command "${ACCEPT_JSON[@]}" "$(url "/v2/users/test/services/$1/deployments")" \
+           | jq -r  'map ({"Deployed By": .deployedBy.handle, "Deployment Hash": .hash, "Deployed At": .deployedAt, "Undeployed At": .undeployedAt, "Exposed At": .exposedAt }) | @tsv'
+    fi
+}
+
+serviceName_assign() {
+    curl_command -X POST "$(url "/v2/users/test/assign/$1/$2")"  && green "Ok.\n"
+}
+
+serviceName_unassign() {
+    curl_command -X POST "$(url "/v2/users/test/unassign/$1")" && green "Ok.\n"
+}
+
+serviceName_command() {
+    if [ $# -lt 1 ]; then
+        serviceName_help
+    else
+        command=$1 ; shift
+        case $command in
+            list | ls)
+                services_list
+                ;;
+            get)
+                serviceName_get "$@"
+                ;;
+            history | hist | h)
+                serviceName_history "$@"
+                ;; 
+            assign)
+                serviceName_assign "$@"
+                ;;
+            unassign)
+                serviceName_unassign "$@"
+                ;;
+            untagged)
+                services_untagged 
+                ;;
+            tags)
+                services_list_all_tags 
+                ;;
+            tag)
+                services_add_tag "$@"
+                ;;
+            delete-tag | tag-delete | untag)
+                services_delete_tag "$@"
+                ;;
+            by-tag)
+                services_by_tag "$@" 
+                ;;
+            help)
+                serviceName_help
+                ;;
+            *)
+                echo "Unknown command: $command"
+                ;;
+        esac
+    fi
+}        
+serviceName_help() {
+    echo "Usage: sn [command]"
+    echo
+    echo "Commands:"
+    echo "  list | ls"
+    echo "  history    <serviceId>"
+    echo "  assign     <serviceId> <hash>"
+    echo "  unassign   <serviceId>"
+    echo "  untagged"
+    echo "  tags"
+    echo "  tag        <serviceId> <tag>"
+    echo "  delete-tag <serviceId> <tag>"
+    echo "  by-tag     <tag>"
+    echo
+}
+
+#                         ▄▄                      ▄▄▄▄                         
+#                         ██                      ▀▀██                         
+#                    ▄███▄██   ▄████▄   ██▄███▄     ██       ▄████▄   ▀██  ███ 
+#                   ██▀  ▀██  ██▄▄▄▄██  ██▀  ▀██    ██      ██▀  ▀██   ██▄ ██  
+#                   ██    ██  ██▀▀▀▀▀▀  ██    ██    ██      ██    ██    ████▀  
+#                   ▀██▄▄███  ▀██▄▄▄▄█  ███▄▄██▀    ██▄▄▄   ▀██▄▄██▀     ███   
+#                     ▀▀▀ ▀▀    ▀▀▀▀▀   ██ ▀▀▀       ▀▀▀▀     ▀▀▀▀       ██    
+#                                       ██                             ███     
+
+
+deploy_format() {
+    if [ "$RAW" -eq 1 ]; then
+        jq .
+    elif [ -x "$(which mlr)" ]; then
+        jq -r  'map ({"Deployed By": .deployedBy.handle, "Deployment Hash": .hash, "Deployed At": .deployedAt, "Undeployed At": .undeployedAt, "Exposed At": .exposedAt }) | (.[0] |  to_entries | map(.key)), (.[] | [.[]]) | @csv' | mlr -C --key-color=blue --csv --opprint sort -f shape
+    else
+        jq -r  'map ({"Deployed By": .deployedBy.handle, "Deployment Hash": .hash, "Deployed At": .deployedAt, "Undeployed At": .undeployedAt, "Exposed At": .exposedAt }) | @tsv'
+
+    fi
+}
+
+deploy_create() {
+    curl_command "${SEND_BINARY[@]}" -d "$1" "$(url "/v2/deployments/create?environmentId=$2")"
+}
+
+deploy_delete() {
+    curl_command -X DELETE "$(url "/v2/deployments/$1")"
+}
+
+deploy_get() {
+    curl_command "${ACCEPT_JSON[@]}" "$(url "/v2/deployments/$1")" | jq '[.]' | deploy_format
+}
+
+deploy_expose() {
+    curl_command -X POST "$(url "/v2/deployments/expose/$1")?httpServiceVersion=0"
+}
+
+deploy_unexpose() {
+    curl_command -X DELETE  "$(url "/v2/deployments/unexpose/$1")"
+}
+
+deploy_list() {
+    curl_command "${ACCEPT_JSON[@]}" "$(url "/v2/deployments")"  | deploy_format
+}
+
+deploy_list_unassigned() {
+    if [ "$RAW" -eq 1 ]; then
+        JQ=(.)
+    else
+        JQ=(-r '.[] | [ .deployedBy.handle, .hash, .deployedAt, .exposedAt] | @tsv')
+    fi
+    curl_command "${ACCEPT_JSON[@]}" "$(url "/v2/unassigned")"  | jq "${JQ[@]}"
+}
+
+deploy_list_tags() {
+    curl_command "${ACCEPT_JSON[@]}" "$(url "/v2/deployments/$1/tags")"
+}
+
+deploy_set_tag() {
+    curl_command -X POST "$(url "/v2/deployments/$1/tag/$2")"
+}
+
+deployd_untag() {
+    curl_command -X DELETE "$(url "/v2/deployments/$1/tag/$2")"
+}
+
+deploy_list_untagged() {
+    curl_command "$(url "/v2/deployments/untagged")"
+}
+
+deploy_command() {
+    if [ $# -lt 1 ]; then
+        deployment_help
+    else
+        command=$1 ; shift
+        case $command in
+            get)
+                deploy_get "$@"
+                ;;
+            create)
+                deploy_create "$@"
+                ;;
+            delete | del | d)
+                deploy_delete "$@"
+                ;;  
+            expose)
+                deploy_expose "$@"
+                ;;
+            unexpose)
+                deploy_unexpose "$@"
+                ;;
+            list | ls)
+                deploy_list
+                ;;
+            unassigned)
+                deploy_list_unassigned
+                ;;
+            untagged)
+                deploy_list_untagged
+                ;;
+            tags | list-tags | all-tags | get-tags)
+                deploy_list_tags "$@"
+                ;;
+            tag)
+                deploy_set_tag "$@"
+                ;;
+            delete-tag)
+                deployd_untag "$@"
+                ;;
+            help)
+                deployment_help
+                ;;
+            *)
+                echo "Unknown command: $command"
+                ;;
+        esac
+    fi
+}
+
+deployment_help() {
+    echo "Usage:"
+    echo "deployment [command]"
+    echo
+    echo "Commands:"
+    echo "  get        <deploymentId>"
+    echo "  create     <service> <environmentId>"
+    echo "  list"
+    echo "  expose     <deploymentId>"
+    echo "  unexpose   <deploymentId>"
+    echo
+    echo "  untagged"
+    echo "  tags       <deploymentId>"
+    echo "  tag        <deploymentId> <tag>"
+    echo "  delete-tag <deploymentId> <tag>"
+    echo
+    echo "Notes:"
+    echo "  <service> is literally the binary bytes of your service, good luck with that."
+    echo "  <environmentId> is the UUID of the environment you want to deploy to."
+    echo "  <deploymentId> is the UUID of the deployment you want to tag."
+    echo "  acceptable spellings: deployment | deploy | dep | d"
+}
+
+#                            ██                                                       
+#                ▄▄█████▄  ███████    ▄████▄    ██▄████   ▄█████▄   ▄███▄██   ▄████▄  
+#                ██▄▄▄▄ ▀    ██      ██▀  ▀██   ██▀       ▀ ▄▄▄██  ██▀  ▀██  ██▄▄▄▄██ 
+#                 ▀▀▀▀██▄    ██      ██    ██   ██       ▄██▀▀▀██  ██    ██  ██▀▀▀▀▀▀ 
+#                █▄▄▄▄▄██    ██▄▄▄   ▀██▄▄██▀   ██       ██▄▄▄███  ▀██▄▄███  ▀██▄▄▄▄█ 
+#                 ▀▀▀▀▀▀      ▀▀▀▀     ▀▀▀▀     ▀▀        ▀▀▀▀ ▀▀   ▄▀▀▀ ██    ▀▀▀▀▀  
+#                                                                   ▀████▀▀           
+
+storage_create() {
+    curl_command -X POST "$(url "/v2/storage/create/$1")"
+}
+
+storage_get() {
+    curl_command "${ACCEPT_JSON[@]}" "$(url "/v2/storage/$1")"
+}
+
+storage_delete() {
+    curl_command -X DELETE "$(url "/v2/storage/$1")"
+}
+
+storage_list() {
+    if [ -x "$(which mlr)" ]; then
+        curl_command "${ACCEPT_JSON[@]}" "$(url "/v2/storage")" | jq -r -s '.[] | map (.environments = (.environments | join (","))) | map ({ Id: .id, Name: .name, Environments: .environments} ) | (.[0] |  to_entries | map(.key)), (.[] | [.[]]) | @csv' | mlr -C --key-color=blue --csv --opprint sort -f shape
+    else
+        curl_command "${ACCEPT_JSON[@]}" "$(url "/v2/storage")" | jq -r -s '.[] | map (.environments = (.environments | join (","))) | map ({ Id: .id, Name: .name, Environments: .environments} ) | (.[0] |  to_entries | map(.key)), (.[] | [.[]]) | @tsv'
+    fi
+}
+
+storage_assign() {
+    curl_command -X POST "$(url "/v2/storage/$1/assign/$2")"
+}
+
+storage_unassign() {
+    curl_command -X POST "$(url "/v2/storage/$1/unassign/$2")"
+}
+
+storage_command() {
+    if [ $# -lt 1 ]; then
+        storage_help
+    else
+        command=$1 ; shift
+        case $command in
+            create)
+                storage_create "$@"
+                ;;
+            get)
+                storage_get "$@"
+                ;;
+            delete)
+                storage_delete "$@"
+                ;;
+            list)
+                storage_list
+                ;;
+            assign)
+                storage_assign "$@"
+                ;;
+            unassign)
+                storage_unassign "$@"
+                ;;
+            help)
+                storage_help
+                ;;
+            *)
+                echo "Unknown command: $command"
+                ;;
+        esac
+    fi
+}
+
+storage_help() {
+    echo "Usage:"
+    echo "storage [command]"
+    echo
+    echo "Commands:"
+    echo "  create   <name>"
+    echo "  get      <name>"
+    echo "  delete   <name>"
+    echo "  list"
+    echo "  assign   <name> <deploymentId>"
+    echo "  unassign <name> <deploymentId>"
+    echo
+    echo "Notes:"
+    echo "  acceptable spellings: storage | store | s"
+}
+
+
+
+#                        ▄▄▄▄                                   
+#                        ▀▀██                                   
+#                          ██       ▄████▄    ▄███▄██  ▄▄█████▄ 
+#                          ██      ██▀  ▀██  ██▀  ▀██  ██▄▄▄▄ ▀ 
+#                          ██      ██    ██  ██    ██   ▀▀▀▀██▄ 
+#                          ██▄▄▄   ▀██▄▄██▀  ▀██▄▄███  █▄▄▄▄▄██ 
+#                           ▀▀▀▀     ▀▀▀▀     ▄▀▀▀ ██   ▀▀▀▀▀▀  
+#                                             ▀████▀▀           
+
+
+
+logs_get_deployment() {
+    curl_command "${ACCEPT_JSON[@]}" "$(url "/v2/logs/deployment/$1")" | jq .
+}
+
+log_command() {
+    if [ $# -lt 1 ]; then
+        logs_help
+    else
+        command=$1 ; shift
+        case $command in
+            by-deployment | by-deploy | by-d | d)
+                logs_get_deployment "$@"
+                ;;
+            help)
+                logs_help
+                ;;
+            *)
+                echo "Unknown command: $command"
+                ;;
+        esac
+    fi
+}
+
+logs_help() {
+    echo "Usage:"
+    echo "logs [command]"
+    echo
+    echo "Commands:"
+    echo "  by-deployment <deploymentId>"
+    echo "  help"
+    echo
+    echo "Notes:"
+    echo "  acceptable spellings: logs | log | l"
+}
+
+#                                                ██                                  
+#                                     ██         ▀▀                                  
+#                ▄████▄   ██▄███▄   ███████    ████      ▄████▄   ██▄████▄  ▄▄█████▄ 
+#               ██▀  ▀██  ██▀  ▀██    ██         ██     ██▀  ▀██  ██▀   ██  ██▄▄▄▄ ▀ 
+#               ██    ██  ██    ██    ██         ██     ██    ██  ██    ██   ▀▀▀▀██▄ 
+#               ▀██▄▄██▀  ███▄▄██▀    ██▄▄▄   ▄▄▄██▄▄▄  ▀██▄▄██▀  ██    ██  █▄▄▄▄▄██ 
+#                 ▀▀▀▀    ██ ▀▀▀       ▀▀▀▀   ▀▀▀▀▀▀▀▀    ▀▀▀▀    ▀▀    ▀▀   ▀▀▀▀▀▀  
+#                         ██                                                         
+
+##
+# verbosity levels:
+# 0 - quiet
+# 1 - normal
+# 2 - verbose
+: "${VERBOSITY:=1}"
+: "${RAW:=0}"
+: "${LOCAL:=1}"
+
+options_command() {
+    if [ $# -lt 1 ]; then
+        options_help
+    else
+        case $1 in
+            verbose)
+                VERBOSITY=2
+                set -x
+                ;;
+            quiet)
+                VERBOSITY=0
+                ;;
+            normal)
+                VERBOSITY=1
+                ;;
+            raw)
+                RAW=1
+                ;;
+            pretty)
+                RAW=0
+                ;;
+            local)
+                LOCAL=1
+                curl_login
+                ;;
+            staging)
+                LOCAL=0
+                curl_login
+		;;
+            prod)
+                LOCAL=0
+                curl_login
+                ;;
+            help)
+                options_help
+                ;;
+            *)
+                red "unknown command!\n"
+                options_help
+                ;;
+        esac
+    fi
+}
+
+options_help() {
+    echo "Usage:"
+    echo "> $0 [options]"
+    echo "Possible Options:"
+    echo "  verbose — most verbose, show every command executed, secrets will be told"
+    echo "  quiet   — make as little noise as possible"
+    echo "  normal  — default chattiness"
+    echo
+    echo "  raw     — show raw JSON output"
+    echo "  pretty  — attempt to show data in pretty tables"
+    echo
+    echo "  local   — run commands against "
+    echo "  prod    — run commands against production server"
+    echo 
+    echo "  help    — show this help message"
+    echo 
+    echo "Notes:"
+    echo " * normal is the default"
+    echo " * Possible spellings: options | option | opt | o"
+}
+
+#                                                            ▄▄▄▄     
+#                                                            ▀▀██     
+#                               ██▄████   ▄████▄   ██▄███▄     ██     
+#                               ██▀      ██▄▄▄▄██  ██▀  ▀██    ██     
+#                               ██       ██▀▀▀▀▀▀  ██    ██    ██     
+#                               ██       ▀██▄▄▄▄█  ███▄▄██▀    ██▄▄▄  
+#                               ▀▀         ▀▀▀▀▀   ██ ▀▀▀       ▀▀▀▀  
+#                                                  ██                 
+#                             
+
+command() {
+    if [ $# -lt 1 ]; then
+        command_help
+        return
+    else
+        section=$1 ; shift
+        case $section in
+          account)
+                account_command "$@"
+                ;;
+            e | env | environment | environments)
+                environment_command "$@"
+                ;;
+            sn | sname | serviceName)
+                serviceName_command "$@"
+                ;;
+            si | sid | serviceId)
+                serviceId_command "$@"
+                ;;
+            store | storage)
+                storage_command "$@"
+                ;;
+            d | deployment | deployments | deploy)
+                deploy_command "$@"
+                ;;
+
+            daemon)
+                daemon_command "$@"
+                ;;
+            
+            l | log | logs)
+                log_command "$@"
+                ;;
+            o | opt | option | options)
+                options_command "$@"
+                ;;
+            q | exit | quit)
+                cleanup
+                exit 0
+                ;;
+            help)
+                command_help "$@"
+                ;;
+            *)
+                echo "Unknown section: $section"
+                ;;
+        esac
+    fi
+}
+
+command_help() {
+    if [ $# -gt 0 ]; then
+        case $1 in
+          account)
+                account_help
+                ;;
+            e | env | environment | environments)
+                environment_help
+                ;;
+            serviceId | sid | si)
+                serviceId_help
+                ;;
+            serviceName | sname | sn)
+                serviceName_help
+                ;;
+            store | storage)
+                storage_help
+                ;;
+            d | deployment | deployments | deploy)
+                deployment_help
+                ;;
+            l | log | logs)
+                logs_help
+                ;;
+            o | opt | option | options)
+                options_help
+                ;;
+            q | exit | quit)
+                ;;
+            *)
+                echo "Unknown section: $1"
+                ;;
+        esac
+    else
+
+    echo "Possible Commands: "
+    echo "  [section] [command]"
+    echo "  help"
+    echo "  quit | exit | q"
+    echo
+    echo "Sections:"
+    echo "  options      | option      | opt    | o"
+    echo "  environments | environment | env    | e"
+    echo "  serviceIds   | sids        | si"
+    echo "  serviceNames | snames      | sn"
+    echo "  deployment   | deployments | deploy | d"
+    echo "  storage      | store"
+    echo "  logs         | log         | l"
+    echo
+    echo "For more help, type:"
+    echo "  [section] help"
+    echo
+    echo " e.g.:"
+    echo " > env help"
+    echo
+    fi
+}
+
+repl() {
+    while true; do
+        # shellcheck disable=SC2162
+        if ! read -e -p "> " line; then 
+            cleanup
+            exit 0
+        fi
+        command $line
+        history -s "$line"
+        history -w "$HISTORY_FILE"
+        echo
+    done
+}
+
+#                                                 ██              
+#                                                 ▀▀              
+#                          ████▄██▄   ▄█████▄   ████     ██▄████▄ 
+#                          ██ ██ ██   ▀ ▄▄▄██     ██     ██▀   ██ 
+#                          ██ ██ ██  ▄██▀▀▀██     ██     ██    ██ 
+#                          ██ ██ ██  ██▄▄▄███  ▄▄▄██▄▄▄  ██    ██ 
+#                          ▀▀ ▀▀ ▀▀   ▀▀▀▀ ▀▀  ▀▀▀▀▀▀▀▀  ▀▀    ▀▀ 
+
+usage() {
+    echo "Usage: $0 [-hvq] section command"
+    echo "Options:"
+    echo "  -h  Show this help"
+    echo "  -v  Verbose output"
+    echo "  -q  Less output"
+    echo "  -s  Use staging server"
+    echo "  -p  Use production server"
+}
+
+parseOptions() {
+    while getopts "hqvps" opt; do
+        case $opt in
+            h)
+                usage
+                exit 0
+                ;;
+            q)
+                VERBOSITY=0
+                ;;
+            v)
+                VERBOSITY=2
+                ;;
+            p)
+                LOCAL=0
+	    	;;
+	    s)
+                LOCAL=0
+		STAGING=1
+                ;;
+            \?)
+                echo "Invalid option _$OPTARG" >&2
+                exit 1
+                ;;
+        esac
+    done
+}
+
+cleanup() {
+    rm "${COOKIE_JAR}"
+}
+
+die() {
+    if [ $# -gt 0 ]; then
+        red "$1\n"
+    fi
+    cleanup
+    exit 1
+}
+
+trap 'cleanup; red "Unknown failure\n"' HUP INT QUIT PIPE TERM
+
+if [ "$VERBOSITY" -gt 1 ]; then set -x ; fi
+
+echo 'enter "help" for help'
+echo
+
+parseOptions "$@"
+
+if [ "$LOCAL" -eq 1 ]; then
+    curl_login
+fi
+
+
+HISTORY_FILE="$HOME/.cloudrepl_history"
+touch "$HISTORY_FILE"
+history -r "$HISTORY_FILE"
+
+repl

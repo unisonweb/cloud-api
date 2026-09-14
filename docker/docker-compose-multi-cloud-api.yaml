@@ -1,0 +1,81 @@
+# Multi-instance overlay: runs a SECOND cloud-api instance, registers both in
+# Consul under the service name peer discovery expects ("cloud-api-http"), and
+# tells the nimbus nodes about both instances so they shard across them
+# (each node picks a random instance from cloudApiInstances on connect).
+#
+# This makes the regular integration suite exercise CROSS-INSTANCE invalidation:
+# the test client talks to instance 1, so invalidations triggered there must
+# reach nodes connected to instance 2 via the /internal/invalidate peer RPC —
+# the path that single-instance runs cannot cover (and where the prod-only
+# wrong-service-name bug hid).
+#
+# Use via the integration-tests-multi make target (layered after
+# docker-compose-cloud-api.yaml and the generated small topology).
+services:
+  cloud-api-2:
+    extends:
+      file: docker-compose-cloud-api.yaml
+      service: cloud-api
+    environment:
+      NOMAD_HOST_IP_cloud_tcp: "cloud-api-2"
+    depends_on:
+      consul:
+        condition: service_healthy
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_started
+      vault:
+        condition: service_started
+      unison-test-s3:
+        condition: service_started
+
+  # One-shot registration of both instances in Consul as "cloud-api-http"
+  # (the name cloud-api's peer discovery queries in a "local" deployment).
+  # Registration is dynamic (not baked into the consul image) so that
+  # single-instance targets, which share the consul-test image, never see a
+  # phantom second peer. Stays alive after registering because
+  # --exit-code-from implies abort-on-container-exit.
+  consul-register-cloud-api:
+    image: ${DOCKER_REGISTRY}/consul-test:${BUILD_TAG}
+    depends_on:
+      consul:
+        condition: service_healthy
+      cloud-api:
+        condition: service_healthy
+      cloud-api-2:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        curl -sf -X PUT http://consul:8500/v1/agent/service/register
+        -d '{"Name":"cloud-api-http","ID":"cloud-api-http-1","Address":"cloud-api","Port":5424,"Meta":{}}'
+        && curl -sf -X PUT http://consul:8500/v1/agent/service/register
+        -d '{"Name":"cloud-api-http","ID":"cloud-api-http-2","Address":"cloud-api-2","Port":5424,"Meta":{}}'
+        && echo "registered both cloud-api instances as cloud-api-http"
+        && tail -f /dev/null
+
+  nimbus-0000:
+    environment:
+      NIMBUS_CLOUD_API_HOST_2: "cloud-api-2"
+    depends_on:
+      cloud-api-2:
+        condition: service_healthy
+  nimbus-0001:
+    environment:
+      NIMBUS_CLOUD_API_HOST_2: "cloud-api-2"
+    depends_on:
+      cloud-api-2:
+        condition: service_healthy
+  nimbus-public-daemon-0000:
+    environment:
+      NIMBUS_CLOUD_API_HOST_2: "cloud-api-2"
+    depends_on:
+      cloud-api-2:
+        condition: service_healthy
+  nimbus-unison-daemon-0000:
+    environment:
+      NIMBUS_CLOUD_API_HOST_2: "cloud-api-2"
+    depends_on:
+      cloud-api-2:
+        condition: service_healthy

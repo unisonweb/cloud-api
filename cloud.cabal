@@ -1,0 +1,532 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.37.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           cloud
+version:        0.1.0.0
+description:    api to the clouds
+homepage:       https://github.com/githubuser/cloud#readme
+bug-reports:    https://github.com/githubuser/cloud/issues
+author:         Unison Computing
+maintainer:     unison.cloud
+copyright:      2023 Unison Computing
+build-type:     Simple
+
+source-repository head
+  type: git
+  location: https://github.com/githubuser/cloud
+
+library
+  exposed-modules:
+      Cloud
+      Cloud.App
+      Cloud.Byoc.API
+      Cloud.Byoc.App
+      Cloud.Byoc.Env
+      Cloud.Byoc.Impl
+      Cloud.Byoc.Types
+      Cloud.Client
+      Cloud.Client.Errors
+      Cloud.Client.Messages
+      Cloud.Client.Nimbus
+      Cloud.Client.Types
+      Cloud.Cluster.Auth
+      Cloud.Cluster.Location
+      Cloud.Cluster.Metrics
+      Cloud.Consul.API
+      Cloud.Consul.Daemon
+      Cloud.Consul.Filtering
+      Cloud.Daemon.API
+      Cloud.Daemon.Impl
+      Cloud.Daemon.Types
+      Cloud.Deployment
+      Cloud.Deployment.API
+      Cloud.Deployment.DeploymentHash
+      Cloud.Deployment.Impl
+      Cloud.Deployment.Types
+      Cloud.Domain.API
+      Cloud.Domain.Impl
+      Cloud.Domain.Types
+      Cloud.Email.Client
+      Cloud.Env
+      Cloud.Environment.API
+      Cloud.Environment.Types
+      Cloud.Errors
+      Cloud.Events
+      Cloud.Invalidation.Metrics
+      Cloud.JWT
+      Cloud.Log.API
+      Cloud.Log.Types
+      Cloud.Metrics
+      Cloud.Postgres
+      Cloud.Postgres.App
+      Cloud.Postgres.Env
+      Cloud.Postgres.Ops
+      Cloud.Postgres.Ops.Byoc
+      Cloud.Postgres.Ops.Daemon
+      Cloud.Postgres.Ops.Deployment
+      Cloud.Postgres.Ops.Environment
+      Cloud.Postgres.Ops.Internal
+      Cloud.Postgres.Ops.Job
+      Cloud.Postgres.Ops.Service
+      Cloud.Postgres.Ops.Storage
+      Cloud.Postgres.Ops.Stripe
+      Cloud.Postgres.Ops.User
+      Cloud.Postgres.Queries
+      Cloud.Postgres.Queries.BYOC
+      Cloud.Postgres.Queries.Daemon
+      Cloud.Postgres.Queries.Deployment
+      Cloud.Postgres.Queries.Environment
+      Cloud.Postgres.Queries.Internal
+      Cloud.Postgres.Queries.Metrics
+      Cloud.Postgres.Queries.Service
+      Cloud.Postgres.Queries.Storage
+      Cloud.Postgres.Queries.Stripe
+      Cloud.Postgres.Queries.User
+      Cloud.Prelude
+      Cloud.Prelude.Orphans
+      Cloud.Service.API
+      Cloud.Service.Impl
+      Cloud.Service.Types
+      Cloud.Storage.API
+      Cloud.Storage.Impl
+      Cloud.Storage.Types
+      Cloud.Stripe.API
+      Cloud.Stripe.ApiHelpers
+      Cloud.Stripe.Customers
+      Cloud.Stripe.Subscriptions
+      Cloud.Stripe.Types
+      Cloud.Stripe.WebhookHandlers
+      Cloud.User.App
+      Cloud.User.Env
+      Cloud.User.Impl
+      Cloud.User.Types
+      Cloud.User.UserHandle
+      Cloud.Utils
+      Cloud.Utils.Logging
+      Cloud.Utils.Logging.Types
+      Cloud.Utils.PathInfo
+      Cloud.Utils.ServantClientUtils
+      Cloud.Utils.StringUtil
+      Cloud.Utils.TextUtil
+      Cloud.Web.API
+      Cloud.Web.App
+      Cloud.Web.Cluster.API
+      Cloud.Web.Cluster.Impl
+      Cloud.Web.Environment
+      Cloud.Web.Errors
+      Cloud.Web.Impl
+      Cloud.Web.Internal.API
+      Cloud.Web.Internal.Impl
+      Cloud.Web.Internal.Types
+      Cloud.Web.Local.API
+      Cloud.Web.Local.Impl
+      Cloud.Web.Loki
+      Cloud.Web.RawRequest
+      Cloud.Web.Types
+      Cloud.Web.Util
+  hs-source-dirs:
+      src
+  default-extensions:
+      ApplicativeDo
+      BangPatterns
+      BlockArguments
+      BlockArguments
+      DeriveFoldable
+      DeriveFunctor
+      DeriveGeneric
+      DeriveTraversable
+      DerivingStrategies
+      DerivingVia
+      DoAndIfThenElse
+      DuplicateRecordFields
+      FlexibleContexts
+      FlexibleInstances
+      GeneralizedNewtypeDeriving
+      ImportQualifiedPost
+      InstanceSigs
+      LambdaCase
+      MultiParamTypeClasses
+      NamedFieldPuns
+      NumericUnderscores
+      OverloadedStrings
+      OverloadedRecordDot
+      PatternSynonyms
+      QuasiQuotes
+      QuasiQuotes
+      RankNTypes
+      RecordWildCards
+      ScopedTypeVariables
+      TupleSections
+      TypeApplications
+      TypeOperators
+      ViewPatterns
+  ghc-options: -Wall -Werror -Wno-name-shadowing -Wno-type-defaults -Wno-missing-pattern-synonym-signatures -fprint-expanded-synonyms -fwrite-ide-info -O2 -funbox-strict-fields
+  build-depends:
+      MonadRandom
+    , aeson
+    , amazonka
+    , amazonka-core
+    , amazonka-s3
+    , async
+    , base >=4.7 && <5
+    , base64-bytestring
+    , base64-bytestring-type
+    , binary
+    , binary-instances
+    , bytestring
+    , case-insensitive
+    , clock
+    , conduit
+    , containers
+    , cookie
+    , crypton
+    , crypton-connection
+    , data-default
+    , deferred-folds
+    , either
+    , fast-logger
+    , filepath
+    , focus
+    , fuzzyfind
+    , hashable
+    , hasql
+    , hasql-interpolate
+    , hasql-pool
+    , hedis
+    , here
+    , http-api-data
+    , http-client
+    , http-client-tls
+    , http-media
+    , http-types
+    , jose
+    , lens
+    , lens-aeson
+    , megaparsec
+    , memory
+    , monad-validate
+    , mtl
+    , network
+    , network-simple
+    , network-uri
+    , nonempty-containers
+    , pem
+    , prometheus-client
+    , prometheus-metrics-ghc
+    , random
+    , raven-haskell
+    , regex-tdfa
+    , resource-pool ==0.3.1.0
+    , resourcet
+    , servant
+    , servant-auth
+    , servant-auth-server
+    , servant-client
+    , servant-server
+    , servant-websockets
+    , share-auth
+    , share-utils
+    , stm
+    , stm-chans
+    , stm-conduit
+    , stm-containers
+    , stripe-concepts
+    , stripe-signature
+    , text
+    , time
+    , tls
+    , transformers
+    , unliftio
+    , unordered-containers
+    , uuid
+    , vault
+    , vector
+    , wai
+    , wai-cors
+    , wai-extra
+    , wai-middleware-prometheus
+    , warp
+    , websockets
+    , witch
+    , witherable
+    , x509
+    , x509-store
+  default-language: Haskell2010
+
+executable cloud-exe
+  main-is: Main.hs
+  other-modules:
+      Env
+  hs-source-dirs:
+      app
+  default-extensions:
+      ApplicativeDo
+      BangPatterns
+      BlockArguments
+      BlockArguments
+      DeriveFoldable
+      DeriveFunctor
+      DeriveGeneric
+      DeriveTraversable
+      DerivingStrategies
+      DerivingVia
+      DoAndIfThenElse
+      DuplicateRecordFields
+      FlexibleContexts
+      FlexibleInstances
+      GeneralizedNewtypeDeriving
+      ImportQualifiedPost
+      InstanceSigs
+      LambdaCase
+      MultiParamTypeClasses
+      NamedFieldPuns
+      NumericUnderscores
+      OverloadedStrings
+      OverloadedRecordDot
+      PatternSynonyms
+      QuasiQuotes
+      QuasiQuotes
+      RankNTypes
+      RecordWildCards
+      ScopedTypeVariables
+      TupleSections
+      TypeApplications
+      TypeOperators
+      ViewPatterns
+  ghc-options: -Wall -Werror -Wno-name-shadowing -Wno-type-defaults -Wno-missing-pattern-synonym-signatures -fprint-expanded-synonyms -fwrite-ide-info -O2 -funbox-strict-fields -threaded -rtsopts "-with-rtsopts=-N -A32m -qn2"
+  build-depends:
+      MonadRandom
+    , aeson
+    , amazonka
+    , amazonka-core
+    , amazonka-s3
+    , async
+    , base >=4.7 && <5
+    , base64-bytestring
+    , base64-bytestring-type
+    , binary
+    , binary-instances
+    , bytestring
+    , case-insensitive
+    , clock
+    , cloud
+    , conduit
+    , containers
+    , cookie
+    , crypton
+    , crypton-connection
+    , data-default
+    , deferred-folds
+    , either
+    , fast-logger
+    , filepath
+    , focus
+    , fuzzyfind
+    , hashable
+    , hasql
+    , hasql-interpolate
+    , hasql-pool
+    , hedis
+    , here
+    , http-api-data
+    , http-client
+    , http-client-tls
+    , http-media
+    , http-types
+    , jose
+    , lens
+    , lens-aeson
+    , megaparsec
+    , memory
+    , monad-validate
+    , mtl
+    , network
+    , network-simple
+    , network-uri
+    , nonempty-containers
+    , pem
+    , prometheus-client
+    , prometheus-metrics-ghc
+    , random
+    , raven-haskell
+    , regex-tdfa
+    , resource-pool ==0.3.1.0
+    , resourcet
+    , servant
+    , servant-auth
+    , servant-auth-server
+    , servant-client
+    , servant-server
+    , servant-websockets
+    , share-auth
+    , share-utils
+    , stm
+    , stm-chans
+    , stm-conduit
+    , stm-containers
+    , stripe-concepts
+    , stripe-signature
+    , text
+    , time
+    , tls
+    , transformers
+    , unliftio
+    , unordered-containers
+    , uuid
+    , vault
+    , vector
+    , wai
+    , wai-cors
+    , wai-extra
+    , wai-middleware-prometheus
+    , warp
+    , websockets
+    , witch
+    , witherable
+    , x509
+    , x509-store
+  default-language: Haskell2010
+
+test-suite cloud-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Cloud.ProtocolFixturesSpec
+      Paths_cloud
+  hs-source-dirs:
+      test
+  default-extensions:
+      ApplicativeDo
+      BangPatterns
+      BlockArguments
+      BlockArguments
+      DeriveFoldable
+      DeriveFunctor
+      DeriveGeneric
+      DeriveTraversable
+      DerivingStrategies
+      DerivingVia
+      DoAndIfThenElse
+      DuplicateRecordFields
+      FlexibleContexts
+      FlexibleInstances
+      GeneralizedNewtypeDeriving
+      ImportQualifiedPost
+      InstanceSigs
+      LambdaCase
+      MultiParamTypeClasses
+      NamedFieldPuns
+      NumericUnderscores
+      OverloadedStrings
+      OverloadedRecordDot
+      PatternSynonyms
+      QuasiQuotes
+      QuasiQuotes
+      RankNTypes
+      RecordWildCards
+      ScopedTypeVariables
+      TupleSections
+      TypeApplications
+      TypeOperators
+      ViewPatterns
+  ghc-options: -Wall -Werror -Wno-name-shadowing -Wno-type-defaults -Wno-missing-pattern-synonym-signatures -fprint-expanded-synonyms -fwrite-ide-info -O2 -funbox-strict-fields -threaded -rtsopts "-with-rtsopts=-N -A32m -qn2"
+  build-depends:
+      MonadRandom
+    , aeson
+    , amazonka
+    , amazonka-core
+    , amazonka-s3
+    , async
+    , base >=4.7 && <5
+    , base64-bytestring
+    , base64-bytestring-type
+    , binary
+    , binary-instances
+    , bytestring
+    , case-insensitive
+    , clock
+    , cloud
+    , conduit
+    , containers
+    , cookie
+    , crypton
+    , crypton-connection
+    , data-default
+    , deferred-folds
+    , either
+    , fast-logger
+    , filepath
+    , focus
+    , fuzzyfind
+    , hashable
+    , hasql
+    , hasql-interpolate
+    , hasql-pool
+    , hedis
+    , here
+    , hspec
+    , hspec-discover
+    , hspec-expectations
+    , hspec-wai
+    , hspec-wai-json
+    , http-api-data
+    , http-client
+    , http-client-tls
+    , http-media
+    , http-types
+    , jose
+    , lens
+    , lens-aeson
+    , megaparsec
+    , memory
+    , monad-validate
+    , mtl
+    , network
+    , network-simple
+    , network-uri
+    , nonempty-containers
+    , pem
+    , prometheus-client
+    , prometheus-metrics-ghc
+    , random
+    , raven-haskell
+    , regex-tdfa
+    , resource-pool ==0.3.1.0
+    , resourcet
+    , servant
+    , servant-auth
+    , servant-auth-server
+    , servant-client
+    , servant-server
+    , servant-websockets
+    , share-auth
+    , share-utils
+    , stm
+    , stm-chans
+    , stm-conduit
+    , stm-containers
+    , stripe-concepts
+    , stripe-signature
+    , text
+    , time
+    , tls
+    , transformers
+    , unliftio
+    , unordered-containers
+    , uuid
+    , vault
+    , vector
+    , wai
+    , wai-cors
+    , wai-extra
+    , wai-middleware-prometheus
+    , warp
+    , websockets
+    , witch
+    , witherable
+    , x509
+    , x509-store
+  default-language: Haskell2010

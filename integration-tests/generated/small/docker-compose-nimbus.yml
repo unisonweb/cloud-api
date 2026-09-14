@@ -1,0 +1,78 @@
+services:
+  nimbus-0000:
+    depends_on:
+      - cloud-api
+      - consul
+      - vault
+      - unison-test-dynamo
+      - outbound-http-proxy
+    environment:
+      NIMBUS_ALLOC_INDEX: '0'
+      NIMBUS_CONFIG_DIR: /etc/nimbus/cfg
+      NIMBUS_LOCATION_COUNT: '2'
+      NIMBUS_MINIO_412_WORKAROUND: 'true'
+      NIMBUS_NODE_TYPE: interactive
+      NIMBUS_PORT_CLIENT_MSGS: '17010'
+      NIMBUS_PORT_GOSSIP_TCP: '17012'
+      NIMBUS_PORT_PUBLIC: '17011'
+      NIMBUS_SHARD_COUNT: '1'
+    image: "${DOCKER_REGISTRY}/nimbus-with-test-configs:${BUILD_TAG}"
+    stop_grace_period: "1m"
+  nimbus-0001:
+    depends_on:
+      - cloud-api
+      - consul
+      - vault
+      - unison-test-dynamo
+      - outbound-http-proxy
+    environment:
+      NIMBUS_ALLOC_INDEX: '1'
+      NIMBUS_CONFIG_DIR: /etc/nimbus/cfg
+      NIMBUS_LOCATION_COUNT: '2'
+      NIMBUS_MINIO_412_WORKAROUND: 'true'
+      NIMBUS_NODE_TYPE: interactive
+      NIMBUS_PORT_CLIENT_MSGS: '17010'
+      NIMBUS_PORT_GOSSIP_TCP: '17012'
+      NIMBUS_PORT_PUBLIC: '17011'
+      NIMBUS_SHARD_COUNT: '1'
+    image: "${DOCKER_REGISTRY}/nimbus-with-test-configs:${BUILD_TAG}"
+    stop_grace_period: "1m"
+  nimbus-public-daemon-0000:
+    depends_on:
+      - cloud-api
+      - consul
+      - vault
+      - unison-test-dynamo
+      - outbound-http-proxy
+    environment:
+      NIMBUS_ALLOC_INDEX: '0'
+      NIMBUS_CONFIG_DIR: /etc/nimbus/cfg
+      NIMBUS_LOCATION_COUNT: '1'
+      NIMBUS_MINIO_412_WORKAROUND: 'true'
+      NIMBUS_NODE_TYPE: public-daemon
+      NIMBUS_PORT_CLIENT_MSGS: '17010'
+      NIMBUS_PORT_GOSSIP_TCP: '17012'
+      NIMBUS_PORT_PUBLIC: '17011'
+      NIMBUS_SHARD_COUNT: '1'
+    image: "${DOCKER_REGISTRY}/nimbus-with-test-configs:${BUILD_TAG}"
+    stop_grace_period: "1m"
+  nimbus-unison-daemon-0000:
+    depends_on:
+      - cloud-api
+      - consul
+      - vault
+      - unison-test-dynamo
+      - outbound-http-proxy
+    environment:
+      NIMBUS_ALLOC_INDEX: '0'
+      NIMBUS_CONFIG_DIR: /etc/nimbus/cfg
+      NIMBUS_LOCATION_COUNT: '1'
+      NIMBUS_MINIO_412_WORKAROUND: 'true'
+      NIMBUS_NODE_TYPE: unison-daemon
+      NIMBUS_PORT_CLIENT_MSGS: '17010'
+      NIMBUS_PORT_GOSSIP_TCP: '17012'
+      NIMBUS_PORT_PUBLIC: '17011'
+      NIMBUS_SHARD_COUNT: '1'
+    image: "${DOCKER_REGISTRY}/nimbus-with-test-configs:${BUILD_TAG}"
+    stop_grace_period: "1m"
+version: '3'

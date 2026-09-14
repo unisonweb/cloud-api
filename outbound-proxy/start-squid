@@ -1,0 +1,19 @@
+#!/bin/sh
+
+# Adapted from
+# https://github.com/chrisdaish/docker-squid/blob/8a3e10a6b47f254f1a52950b3fc9699bdc51222e/start-squid.sh
+
+set -eu
+
+SQUID=$(/usr/bin/which squid)
+
+# Prepare the cache using Squid.
+echo "Initializing Squid cache..."
+"$SQUID" -z
+
+# Give the Squid cache some time to rebuild.
+sleep 5
+
+# Launch squid
+echo "Starting Squid..."
+exec "$SQUID" --foreground -YCd 1
