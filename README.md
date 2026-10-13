@@ -53,7 +53,7 @@ The node's websocket receive loop applies the invalidation (clears the relevant
 `SemispaceCache` — e.g. `EnvironmentInvalidation` drops the cached
 environment→database mapping) and then replies with `InvalidationAck` carrying the
 `seq` and the measured apply duration. The apply happens first; an ack failure is
-logged, never fatal. The node source lives in the `@cloud/nimbus` project on Share.
+logged, never fatal. The node source lives in the `@unison/nimbus` project on Share.
 
 
 
